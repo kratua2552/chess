@@ -1,5 +1,4 @@
-// chess game INDEV asd
-// test asd asda asd
+// chess game INDEV
 
 type Board = {
     pieceType: number,
