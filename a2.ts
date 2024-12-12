@@ -4,6 +4,7 @@ type Board = {
     pieceType: number,
     pieceColor: number,
 
+    pieceBehavier: number,
     arrayIndex: number,
     access: string
 }
@@ -16,7 +17,7 @@ type SquareToEdge = {
     minNorthWestDirection: number,
     minNorthEastDirection: number,
     minSouthWestDirection: number,
-    minSouthEastDirection: number,
+    minSouthEastDirection: number, 
 
     arrayIndex: number,
     access: string
@@ -49,6 +50,7 @@ const processSideData: { board: Board[], remainingSquareToEdge: SquareToEdge[], 
         return {
             pieceType: 0,
             pieceColor: 0,
+            pieceBehavier: 0,
     
             arrayIndex: i,
             access: `${row}${col}`
@@ -104,7 +106,11 @@ const readOnlyData: { directionOffsets: ReadonlyArray<number>, directionIndexStr
 
 }
 
+
 /////////////////////////////////////////////////////////////
+
+// automatically assign value to required object
+calculatedSquareToEdge();
 
 function loadPosition(fen: string): Board[] {
     const pieces: {p: number, b: number, n: number, r: number, q: number, k: number} = {
@@ -143,7 +149,7 @@ function loadPosition(fen: string): Board[] {
     return processSideData.board;
 }
 
-function sqToEdge(): SquareToEdge[] {
+function calculatedSquareToEdge(): SquareToEdge[] {
     for (let row: number = 0; row < 8; row++) {
         for (let col: number = 0; col < 8; col++) {
 
@@ -173,14 +179,30 @@ function sqToEdge(): SquareToEdge[] {
     return processSideData.remainingSquareToEdge;
 }
 
-sqToEdge();
-
 function moveFunction(key: string): string {
     setMovePosition(key)
     pieceValidation();
-    executeMovePosition();
-    
-    return 'moving process ended';
+
+    let incrementalValue: number = 1;
+    console.log(`current position: ${processSideData.board[processSideData.board.findIndex((obj: Board) => obj.access === processSideData.movePosition.currentPos)].arrayIndex}`)
+    console.log(`target position: ${processSideData.board[processSideData.board.findIndex((obj: Board) => obj.access === processSideData.movePosition.nextPos)].arrayIndex}`)
+    console.log(`possible position: ${processSideData.moveablePosition}`);
+
+    for (let i: number = 0; i < processSideData.moveablePosition.length; i++) {
+        if (processSideData.moveablePosition[i] === processSideData.board[processSideData.board.findIndex((obj: Board) => obj.access === processSideData.movePosition.nextPos)].arrayIndex) {
+            console.log(`position verified tries: ${incrementalValue}`)
+            executeMovePosition();
+            return 'exit0';
+        } else {
+            console.log(`verifying possible position: ${incrementalValue++}/${processSideData.moveablePosition.length}`)
+        }
+
+        if (incrementalValue > processSideData.moveablePosition.length) {
+            console.log(`invalid position`);
+            return 'exit1';
+        }
+    }
+    return 'something went wrong';
 }
 
 function pieceValidation(): void {
@@ -215,7 +237,8 @@ function pieceValidation(): void {
                 break;
             }
             
-            console.log(preComputedTargetSquare);
+            // console.log(preComputedTargetSquare);
+            processSideData.moveablePosition.push(preComputedTargetSquare);
 
         }
     }
@@ -254,6 +277,7 @@ function executeMovePosition(): void {
     processSideData.board[curIndx] = {
       pieceType: 0,
       pieceColor: 0,
+      pieceBehavier: 0,
       arrayIndex: currentObject.arrayIndex,
       access: currentObject.access
     };
@@ -261,21 +285,19 @@ function executeMovePosition(): void {
     processSideData.board[targetIndx] = {
         ...currentObject,
         arrayIndex: targetObject.arrayIndex,
-        access: targetObject.access
+        access: targetObject.access,
+        pieceBehavier: processSideData.board[targetIndx].pieceBehavier = processSideData.board[targetIndx].pieceBehavier + 1
     };
 
+    processSideData.moveablePosition = [];
     return;
 }
 
 
 
 console.log(loadPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
-console.log(moveFunction('10>74'));
-console.log(moveFunction('00>30'));
-console.log(moveFunction('30>74'));
+console.log(moveFunction('10>40'));
 console.log(processSideData.board);
 console.log(processSideData.movePosition);
-
-
 
 
