@@ -1,3 +1,5 @@
 # Chessgame
-um so why did i do dis 
+chess without lib \n
+kinda \n
+why did i do dis \n
 anyways
