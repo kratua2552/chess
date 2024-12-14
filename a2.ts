@@ -1,4 +1,10 @@
-// chess game INDEV
+/* 
+chess game: v1.0 (zero lib)
+to be implemented feature:
+- pawn's en passant move
+
+link to gui soon.
+*/
 
 type Board = {
     type: number,
@@ -26,7 +32,7 @@ type SquareToEdge = {
 type Move = {
     curPos: string, 
     nxtPos: string,
-    select: number
+    select: number,
 }
 
 
@@ -48,9 +54,13 @@ type Profiles = {
     score: number
 }
 
-type castle = {
+type Castle = {
     kingPos: string,
     rookPos: string,
+}
+
+type Game = {
+    turn: number
 }
 
 /////////////////////////////////////////////////////////////
@@ -67,7 +77,7 @@ class Pieces {
     static Black = 16;
 }
 
-const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[], whitePfp: Profiles, blackPfp: Profiles, castlingPos: castle } = {
+const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[], whitePfp: Profiles, blackPfp: Profiles, castlingPos: Castle, game: Game } = {
     board: new Array(64).fill(undefined).map((placeholder, i: number) => {
         const row = Math.floor(i / 8);
         const col = i % 8;
@@ -104,7 +114,7 @@ const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePo
     movPos: {
         curPos: '0',
         nxtPos: '0',
-        select: 0
+        select: 0,
     },
 
     moveablePos: [
@@ -134,6 +144,10 @@ const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePo
     castlingPos: {
         kingPos: '0',
         rookPos: '0',
+    },
+
+    game: {
+        turn: 8
     }
 
 }
@@ -254,13 +268,19 @@ boardInit.sqToEdge();
 
 const moveLogic = {
 
-    move(key: string): string {
+    move(inp: string): number {
 
-        const dir = this.setPos(key) // set position ready for the next move
+        const dir = this.setPos(inp) // set position ready for the next move
+
+        if (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color !== data.game.turn) {
+            console.log(`invalid turn`);
+            return 0;
+        }
 
         if (dir) {
             this.castling();
-            return 'castled';
+            data.game.turn = data.game.turn === 8 ? 16 : 8;
+            return 1;
         }
 
         this.validate.manage(); // check if the move is valid
@@ -277,7 +297,7 @@ const moveLogic = {
     
         if (movPosLength === 0) {
             console.log(`invalid position`);
-            return 'exit1';
+            return 0;
         }
     
         for (let i: number = 0; i < movPosLength; i++) {
@@ -286,7 +306,8 @@ const moveLogic = {
 
                 console.log(`position verified tries: ${increment}`)
                 this.executePos();
-                return 'exit0\n';
+                data.game.turn = data.game.turn === 8 ? 16 : 8;
+                return 1;
 
             } else {
 
@@ -297,11 +318,12 @@ const moveLogic = {
             if (increment > data.moveablePos.length) {
 
                 console.log(`invalid position`);
-                return 'exit1\n';
+                return 0;
 
             }
         }
-        return 'something went wrong\n';
+
+        return 0;
     },
 
     setPos(input: string): number {
@@ -514,33 +536,45 @@ const moveLogic = {
         static Knight = 3;
         static Rook = 4;
         static Queen = 5;
-        static King = 6; */
+        static King = 6; 
+        */
 
         switch (data.board[tarIndx].type) {
+
             case 1:
+
                 data.board[curIndx].color === 8 ? data.whitePfp.score += 1 : data.blackPfp.score += 1;
                 console.log(`ate pawn`);
                 break;
             case 2:
+
                 data.board[curIndx].color === 8 ? data.whitePfp.score += 3 : data.blackPfp.score += 3;
                 console.log(`ate bishop`);
                 break;
             case 3:
+
                 data.board[curIndx].color === 8 ? data.whitePfp.score += 3 : data.blackPfp.score += 3;
                 console.log(`ate knight`);
                 break;
             case 4:
+
                 data.board[curIndx].color === 8 ? data.whitePfp.score += 5 : data.blackPfp.score += 5;
                 console.log(`ate rook`);
                 break;
             case 5:
+
                 data.board[curIndx].color === 8 ? data.whitePfp.score += 9 : data.blackPfp.score += 9;
                 console.log(`ate queeeen`);
                 break;
             case 6:
-                console.log(`ate king, won the game`);
+
+                data.board[curIndx].color === 8 ? data.whitePfp.win += 1 : data.blackPfp.win += 1;
+                data.whitePfp.match += 1;
+                data.blackPfp.match += 1;
+                console.log(`king eaten, run boardInit.loadPos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR") to restart`);
                 break;
             case 0:
+
                 break;
         }
 
@@ -559,8 +593,27 @@ const moveLogic = {
           indx: curObj.indx,
           access: curObj.access
         };
+
+        if ([56, 57, 58, 59, 60, 61, 62, 63].includes(data.board[tarIndx].indx) && data.board[tarIndx].color === 8 && data.board[tarIndx].type === 1){
+            this.promote(data.board[tarIndx].indx, 5);
+            return;
+        }
+
+        if ([0, 1, 2, 3, 4, 5, 6, 7].includes(data.board[tarIndx].indx) && data.board[tarIndx].color === 16 && data.board[tarIndx].type === 1) {
+            this.promote(data.board[tarIndx].indx, 5);
+            return;
+        }
     
         return;
+    },
+
+    promote(promoteIndx: number, options: number): number {
+        data.board[promoteIndx] = {
+            ...data.board[promoteIndx],
+            type: options
+        }
+
+        return options;
     },
 
     validate: {
@@ -691,13 +744,13 @@ const moveLogic = {
     
                         let targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn[dirIndx] * ( i + 1 );
     
-                        if (data.board[targetSq].color === color[1]) { // target square has opponent
+                        if (data.board[targetSq].color === color[1]) {
     
                             break;
     
                         }
     
-                        if (data.board[targetSq].color === color[0]) { // target square has opponent and moving in straight line
+                        if (data.board[targetSq].color === color[0]) { 
     
                             if (dirIndx === 0) {
     
@@ -707,7 +760,7 @@ const moveLogic = {
                             
                         }
     
-                        if (data.board[targetSq].color !== color[0]) { // targer sq
+                        if (data.board[targetSq].color !== color[0]) { 
     
                             if (dirIndx === 1 || dirIndx === 2) {
     
@@ -734,13 +787,13 @@ const moveLogic = {
                         if  (behav === 2) { // bruteforcing this shit, dont care
                             const targetSq2: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn2[0] * (2);
 
-                            if (data.board[targetSq2].color === color[1]) { // target square has opponent
+                            if (data.board[targetSq2].color === color[1]) {
 
                                 break;
         
                             }
         
-                            if (data.board[targetSq2].color === color[0]) { // target square has opponent and moving in straight line
+                            if (data.board[targetSq2].color === color[0]) { 
         
                                 if (dirIndx === 0) {
         
@@ -750,7 +803,7 @@ const moveLogic = {
                                 
                             }
         
-                            if (data.board[targetSq2].color !== color[0]) { // targer sq
+                            if (data.board[targetSq2].color !== color[0]) {
         
                                 if (dirIndx === 1 || dirIndx === 2) {
         
@@ -763,13 +816,13 @@ const moveLogic = {
                             data.moveablePos.push(targetSq2);
                         }
     
-                        if (data.board[targetSq].color === color[1]) { // target square has opponent
+                        if (data.board[targetSq].color === color[1]) { 
     
                             break;
     
                         }
     
-                        if (data.board[targetSq].color === color[0]) { // target square has opponent and moving in straight line
+                        if (data.board[targetSq].color === color[0]) {
     
                             if (dirIndx === 0) {
     
@@ -779,7 +832,7 @@ const moveLogic = {
                             
                         }
     
-                        if (data.board[targetSq].color !== color[0]) { // targer sq
+                        if (data.board[targetSq].color !== color[0]) {
     
                             if (dirIndx === 1 || dirIndx === 2) {
     
@@ -839,13 +892,6 @@ const moveLogic = {
         }
     }
 }
-
+console.log(`"[ROW][COL][MOVE ">" || CASTLING "="][ROW][COL]"`)
 console.log(moveLogic.move('15>35'));
-console.log(moveLogic.move('16>36'));
-console.log(moveLogic.move('17>37'));
-console.log(moveLogic.move('06>25'));
-console.log(moveLogic.move('05>16'));
-console.log(moveLogic.move('04=07'));
-
-
-console.log(data.board);
+console.log(moveLogic.move('71>52'));
