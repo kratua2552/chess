@@ -4,7 +4,7 @@ type Board = {
     type: number,
     color: number,
 
-    behav: number,
+    mov: number,
     indx: number,
     access: string
 }
@@ -42,8 +42,15 @@ type Profiles = {
     win: number,
     lose: number,
     draw: number,
+    match: number,
 
-    kingPos: number
+    kingPos: number,
+    score: number
+}
+
+type castle = {
+    kingPos: string,
+    rookPos: string,
 }
 
 /////////////////////////////////////////////////////////////
@@ -60,7 +67,7 @@ class Pieces {
     static Black = 16;
 }
 
-const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[], whitePfp: Profiles, blackPfp: Profiles } = {
+const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[], whitePfp: Profiles, blackPfp: Profiles, castlingPos: castle } = {
     board: new Array(64).fill(undefined).map((placeholder, i: number) => {
         const row = Math.floor(i / 8);
         const col = i % 8;
@@ -68,7 +75,7 @@ const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePo
         return {
             type: 0,
             color: 0,
-            behav: 0,
+            mov: 0,
     
             indx: i,
             access: `${row}${col}`
@@ -108,16 +115,25 @@ const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePo
         win: 0,
         lose: 0,
         draw: 0,
+        match: 0,
 
-        kingPos: 0
+        kingPos: 0,
+        score: 0,
     },
 
     blackPfp: {
         win: 0,
         lose: 0,
         draw: 0,
+        match: 0,
 
-        kingPos: 0
+        kingPos: 0,
+        score: 0,
+    },
+
+    castlingPos: {
+        kingPos: '0',
+        rookPos: '0',
     }
 
 }
@@ -240,7 +256,13 @@ const moveLogic = {
 
     move(key: string): string {
 
-        this.setPos(key) // set position ready for the next move
+        const dir = this.setPos(key) // set position ready for the next move
+
+        if (dir) {
+            this.castling();
+            return 'castled';
+        }
+
         this.validate.manage(); // check if the move is valid
     
         let increment: number = 1;
@@ -282,31 +304,200 @@ const moveLogic = {
         return 'something went wrong\n';
     },
 
-    setPos(input: string): void {
+    setPos(input: string): number {
 
         const movKey: string[] = input.split('');
-        
-        for (let i: number = 0; i < movKey.length; i++) {
 
-            switch (i) {
+        if (['>'].includes(movKey[2])) {
 
-                case 0:
-                    data.movPos.curPos = `${movKey[i]}${movKey[i += 1]}`;
-                    continue;
+            for (let i: number = 0; i < movKey.length; i++) {
 
-                case 3:
-                    data.movPos.nxtPos = `${movKey[i]}${movKey[i += 1]}`;
-                    break;
+                switch (i) {
 
-                default:
-                    continue;
+                    case 0:
+                        data.movPos.curPos = `${movKey[i]}${movKey[i += 1]}`;
+                        continue;
+    
+                    case 3:
+                        data.movPos.nxtPos = `${movKey[i]}${movKey[i += 1]}`;
+                        break;
+    
+                    default:
+                        continue;
 
+                }
             }
+        }
+
+        if (['='].includes(movKey[2])) {
+
+            for (let i: number = 0; i < movKey.length; i++) {
+
+                switch (i) {
+
+                    case 0:
+                        data.castlingPos.kingPos = `${movKey[i]}${movKey[i += 1]}`;
+                        continue;
+
+                    case 3:
+                        data.castlingPos.rookPos = `${movKey[i]}${movKey[i += 1]}`;
+                        break;
+
+                    default:
+                        continue;
+
+                }
+            }
+
+            return 1;
         }
     
         data.movPos.select = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].type
 
-        return;
+        return 0;
+    },
+
+    castling(): number {
+        const kingIndx: number = data.board.findIndex((obj: Board) => obj.access === data.castlingPos.kingPos);
+        const rookIndx: number = data.board.findIndex((obj: Board) => obj.access === data.castlingPos.rookPos);
+        const color: number = data.board[kingIndx].color;
+
+        if (data.board[kingIndx].mov || data.board[rookIndx].mov) return 0;
+        if (data.board[kingIndx].color !== data.board[rookIndx].color) return 0;
+
+        if (color === 8 && data.board[5].color === 0 && data.board[6].color === 0) {
+
+            data.board[5] = {
+                ...data.board[5],
+                type: 4,
+                color: 8,
+                mov: 1,
+            };
+            
+            data.board[6] = {
+                ...data.board[6],
+                type: 6,
+                color: 8,
+                mov: 1,
+            };
+
+            data.board[4] = {
+                ...data.board[4],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            data.board[7] = {
+                ...data.board[7],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            return 12;
+        }
+
+        if (color === 8 && data.board[1].color === 0 && data.board[2].color === 0 && data.board[3].color === 0) {
+
+            data.board[3] = {
+                ...data.board[3],
+                type: 4,
+                color: 8,
+                mov: 1,
+            };
+            
+            data.board[2] = {
+                ...data.board[2],
+                type: 6,
+                color: 8,
+                mov: 1,
+            };
+
+            data.board[0] = {
+                ...data.board[0],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            data.board[4] = {
+                ...data.board[4],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            return 11;
+        }
+
+        if (color === 16 && data.board[61].color === 0 && data.board[62].color === 0) {
+
+            data.board[61] = {
+                ...data.board[61],
+                type: 4,
+                color: 8,
+                mov: 1,
+            };
+            
+            data.board[62] = {
+                ...data.board[62],
+                type: 6,
+                color: 8,
+                mov: 1,
+            };
+
+            data.board[63] = {
+                ...data.board[63],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            data.board[60] = {
+                ...data.board[7],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            return 12;
+        }
+
+        if (color === 16 && data.board[57].color === 0 && data.board[58].color === 0 && data.board[59].color === 0) {
+
+            data.board[59] = {
+                ...data.board[59],
+                type: 4,
+                color: 8,
+                mov: 1,
+            };
+            
+            data.board[58] = {
+                ...data.board[58],
+                type: 6,
+                color: 8,
+                mov: 1,
+            };
+
+            data.board[56] = {
+                ...data.board[56],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            data.board[60] = {
+                ...data.board[60],
+                type: 0,
+                color: 0,
+                mov: 0,
+            };
+
+            return 13;
+        }
+
+        return 1;
     },
 
     executePos(): void {
@@ -316,21 +507,57 @@ const moveLogic = {
     
         const curObj: Board = data.board[curIndx]; // 00
         const tarObj: Board = data.board[tarIndx]; // 74
+
+        /*
+        static Pawn = 1;
+        static Bishop = 2;
+        static Knight = 3;
+        static Rook = 4;
+        static Queen = 5;
+        static King = 6; */
+
+        switch (data.board[tarIndx].type) {
+            case 1:
+                data.board[curIndx].color === 8 ? data.whitePfp.score += 1 : data.blackPfp.score += 1;
+                console.log(`ate pawn`);
+                break;
+            case 2:
+                data.board[curIndx].color === 8 ? data.whitePfp.score += 3 : data.blackPfp.score += 3;
+                console.log(`ate bishop`);
+                break;
+            case 3:
+                data.board[curIndx].color === 8 ? data.whitePfp.score += 3 : data.blackPfp.score += 3;
+                console.log(`ate knight`);
+                break;
+            case 4:
+                data.board[curIndx].color === 8 ? data.whitePfp.score += 5 : data.blackPfp.score += 5;
+                console.log(`ate rook`);
+                break;
+            case 5:
+                data.board[curIndx].color === 8 ? data.whitePfp.score += 9 : data.blackPfp.score += 9;
+                console.log(`ate queeeen`);
+                break;
+            case 6:
+                console.log(`ate king, won the game`);
+                break;
+            case 0:
+                break;
+        }
+
+        data.board[tarIndx] = {
+            ...curObj,
+            indx: tarObj.indx,
+            access: tarObj.access,
+            mov: data.board[curIndx].mov += 1
+        };
         
         // some kind of bruteforce, but if it works it works
         data.board[curIndx] = {
           type: 0,
           color: 0,
-          behav: 0,
+          mov: 0,
           indx: curObj.indx,
           access: curObj.access
-        };
-    
-        data.board[tarIndx] = {
-            ...curObj,
-            indx: tarObj.indx,
-            access: tarObj.access,
-            behav: data.board[tarIndx].behav = data.board[tarIndx].behav + 1
         };
     
         return;
@@ -455,47 +682,119 @@ const moveLogic = {
         pawn() {
             
             const color: number[] = this.enemColor();
+            const behav: number = (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].mov === 0) ? 2 : 1;
 
-            for (let dirIndx: number = 0; dirIndx < 3; dirIndx++) {
+            if (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color === 8) {
+                for (let dirIndx: number = 0; dirIndx < 3; dirIndx++) {
 
-                for (let i: number = 0; i < Math.min(1, data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]); i++) {
-
-                    let targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn[dirIndx];
-
-                    if (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color === 16) {
-
-                        targetSq = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn2[dirIndx];
-
-                    }
-
-                    if (data.board[targetSq].color === color[1]) {
-
-                        break;
-
-                    }
-
-                    if (data.board[targetSq].color === color[0]) {
-
-                        if (dirIndx === 0) {
-
+                    for (let i: number = 0; i < Math.min(behav, data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]); i++) {
+    
+                        let targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn[dirIndx] * ( i + 1 );
+    
+                        if (data.board[targetSq].color === color[1]) { // target square has opponent
+    
                             break;
-
+    
                         }
-                        
-                    }
-
-                    if (data.board[targetSq].color !== color[0]) {
-
-                        if (dirIndx === 1 || dirIndx === 2) {
-
-                            break;
-
+    
+                        if (data.board[targetSq].color === color[0]) { // target square has opponent and moving in straight line
+    
+                            if (dirIndx === 0) {
+    
+                                break;
+    
+                            }
+                            
                         }
-
+    
+                        if (data.board[targetSq].color !== color[0]) { // targer sq
+    
+                            if (dirIndx === 1 || dirIndx === 2) {
+    
+                                break;
+    
+                            }
+    
+                        }
+    
+                        data.moveablePos.push(targetSq);
                     }
-
-                    data.moveablePos.push(targetSq);
                 }
+
+                return;
+            }
+
+            if (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color === 16) {
+                for (let dirIndx: number = 0; dirIndx < 3; dirIndx++) {
+
+                    for (let i: number = 0; i < Math.min(1, data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]); i++) {
+    
+                        let targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn2[dirIndx];
+
+                        if  (behav === 2) { // bruteforcing this shit, dont care
+                            const targetSq2: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn2[0] * (2);
+
+                            if (data.board[targetSq2].color === color[1]) { // target square has opponent
+
+                                break;
+        
+                            }
+        
+                            if (data.board[targetSq2].color === color[0]) { // target square has opponent and moving in straight line
+        
+                                if (dirIndx === 0) {
+        
+                                    break;
+        
+                                }
+                                
+                            }
+        
+                            if (data.board[targetSq2].color !== color[0]) { // targer sq
+        
+                                if (dirIndx === 1 || dirIndx === 2) {
+        
+                                    break;
+        
+                                }
+        
+                            }
+
+                            data.moveablePos.push(targetSq2);
+                        }
+    
+                        if (data.board[targetSq].color === color[1]) { // target square has opponent
+    
+                            break;
+    
+                        }
+    
+                        if (data.board[targetSq].color === color[0]) { // target square has opponent and moving in straight line
+    
+                            if (dirIndx === 0) {
+    
+                                break;
+    
+                            }
+                            
+                        }
+    
+                        if (data.board[targetSq].color !== color[0]) { // targer sq
+    
+                            if (dirIndx === 1 || dirIndx === 2) {
+    
+                                break;
+    
+                            }
+    
+                        }
+    
+                        data.moveablePos.push(targetSq);
+                    }
+                }
+
+                return;
+
             }
 
         },
@@ -541,9 +840,12 @@ const moveLogic = {
     }
 }
 
-console.log(moveLogic.move('13>23'));
-console.log(moveLogic.move('23>33'));
-console.log(moveLogic.move('62>52'));
-console.log(moveLogic.move('52>42'));
-console.log(moveLogic.move('33>42'));
-console.log(data.movPos);
+console.log(moveLogic.move('15>35'));
+console.log(moveLogic.move('16>36'));
+console.log(moveLogic.move('17>37'));
+console.log(moveLogic.move('06>25'));
+console.log(moveLogic.move('05>16'));
+console.log(moveLogic.move('04=07'));
+
+
+console.log(data.board);
