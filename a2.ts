@@ -10,23 +10,40 @@ type Board = {
 }
 
 type SquareToEdge = {
-    northDir: number,
-    southDir: number,
-    westDir: number,
-    eastDir: number,
-    minNorthwestDir: number,
-    minNortheastDir: number,
-    minSouthwestDir: number,
-    minSoutheastDir: number, 
+    NDir: number,
+    SDir: number,
+    WDir: number,
+    EDir: number,
+    NWDir: number,
+    NEDir: number,
+    SWDir: number,
+    SEDir: number, 
 
     indx: number,
     access: string
 }
 
 type Move = {
-    currentPos: string, 
-    nextPos: string,
-    selecting: number
+    curPos: string, 
+    nxtPos: string,
+    select: number
+}
+
+
+type ReadOnlyData = {
+    dirOffsets: ReadonlyArray<number>, 
+    dirIndx: ReadonlyArray<string>, 
+    dirOffsetsKnight: ReadonlyArray<[number, number]>,
+    dirOffsetsPawn: ReadonlyArray<number>,
+    dirOffsetsPawn2: ReadonlyArray<number>
+}
+
+type Profiles = {
+    win: number,
+    lose: number,
+    draw: number,
+
+    kingPos: number
 }
 
 /////////////////////////////////////////////////////////////
@@ -43,7 +60,7 @@ class Pieces {
     static Black = 16;
 }
 
-const processData: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[] } = {
+const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: number[], whitePfp: Profiles, blackPfp: Profiles } = {
     board: new Array(64).fill(undefined).map((placeholder, i: number) => {
         const row = Math.floor(i / 8);
         const col = i % 8;
@@ -63,14 +80,14 @@ const processData: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, mov
         const col = i % 8;
     
         return {
-            northDir: 0,
-            southDir: 0,
-            westDir: 0,
-            eastDir: 0,
-            minNorthwestDir: 0,
-            minNortheastDir: 0,
-            minSouthwestDir: 0,
-            minSoutheastDir: 0,
+            NDir: 0,
+            SDir: 0,
+            WDir: 0,
+            EDir: 0,
+            NWDir: 0,
+            NEDir: 0,
+            SWDir: 0,
+            SEDir: 0,
     
             indx: i,
             access: `${row}${col}`
@@ -78,18 +95,34 @@ const processData: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, mov
     }),
     
     movPos: {
-        currentPos: '0',
-        nextPos: '0',
-        selecting: 0
+        curPos: '0',
+        nxtPos: '0',
+        select: 0
     },
 
     moveablePos: [
         
-    ]
+    ],
+
+    whitePfp: {
+        win: 0,
+        lose: 0,
+        draw: 0,
+
+        kingPos: 0
+    },
+
+    blackPfp: {
+        win: 0,
+        lose: 0,
+        draw: 0,
+
+        kingPos: 0
+    }
 
 }
 
-const readOnlyData: { dirOffsets: ReadonlyArray<number>, dirIndx: ReadonlyArray<string>, dirOffsetsKnight: ReadonlyArray<[number, number]> } = {
+const readOnlyData: ReadOnlyData = {
 
     dirOffsetsKnight: [
         [-2, -1], [-1, -2], [1, -2], [2, -1], 
@@ -99,20 +132,27 @@ const readOnlyData: { dirOffsets: ReadonlyArray<number>, dirIndx: ReadonlyArray<
     dirOffsets: [
         8, -8, -1, 1, 7, -7, 9, -9
     ],
+
+    dirOffsetsPawn: [
+        8, 7, 9
+    ],
+
+    dirOffsetsPawn2: [
+        -8, -7, -9
+    ],
     
     dirIndx: [
-        'northDir',
-        'southDir',
-        'westDir',
-        'eastDir',
-        'minNorthwestDir',
-        'minSoutheastDir',
-        'minNortheastDir',
-        'minSouthwestDir',
+        'NDir',
+        'SDir',
+        'WDir',
+        'EDir',
+        'NWDir',
+        'SEDir',
+        'NEDir',
+        'SWDir',
     ]
 
 }
-
 
 ///////////////////////////////////////////////////////////// 
 
@@ -144,8 +184,8 @@ const boardInit = {
                     const color: number = (fenArr[i].toUpperCase() === fenArr[i]) ? Pieces.White : Pieces.Black;
                     const index: number = row * 8 + col;
     
-                    processData.board[index] = {
-                        ...processData.board[index],
+                    data.board[index] = {
+                        ...data.board[index],
                         type: type,
                         color: color,
                     };
@@ -155,7 +195,7 @@ const boardInit = {
             }
         }
     
-        return processData.board;
+        return data.board;
     },
 
     sqToEdge(): SquareToEdge[] {
@@ -171,22 +211,22 @@ const boardInit = {
     
                 const index: number = col * 8 + row;
     
-                processData.sqToEdge[index] = {
-                    ...processData.sqToEdge[index],
+                data.sqToEdge[index] = {
+                    ...data.sqToEdge[index],
     
-                    northDir: north,
-                    southDir: south,
-                    westDir: west,
-                    eastDir: east,
-                    minNorthwestDir: Math.min(north, west),
-                    minSoutheastDir: Math.min(south, east),
-                    minNortheastDir: Math.min(north, east),
-                    minSouthwestDir: Math.min(south, west),
+                    NDir: north,
+                    SDir: south,
+                    WDir: west,
+                    EDir: east,
+                    NWDir: Math.min(north, west),
+                    SEDir: Math.min(south, east),
+                    NEDir: Math.min(north, east),
+                    SWDir: Math.min(south, west),
                 }
             }
         }
     
-        return processData.sqToEdge;
+        return data.sqToEdge;
     }
 
 }
@@ -200,16 +240,16 @@ const moveLogic = {
 
     move(key: string): string {
 
-        this.setPos(key)
-        this.pieceValidate.manage();
+        this.setPos(key) // set position ready for the next move
+        this.validate.manage(); // check if the move is valid
     
         let increment: number = 1;
-        const movPosLength: number = processData.moveablePos.length;
-        const movPos: number[] = processData.moveablePos;
+        const movPosLength: number = data.moveablePos.length;
+        const movPos: number[] = data.moveablePos;
         
-        console.log(`current position: ${processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].indx}`)
+        console.log(`current position: ${data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx}`)
 
-        console.log(`target position: ${processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.nextPos)].indx}`)
+        console.log(`target position: ${data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.nxtPos)].indx}`)
 
         console.log(`possible position: ${movPos}`);
     
@@ -220,7 +260,7 @@ const moveLogic = {
     
         for (let i: number = 0; i < movPosLength; i++) {
 
-            if (movPos[i] === processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.nextPos)].indx) {
+            if (movPos[i] === data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.nxtPos)].indx) {
 
                 console.log(`position verified tries: ${increment}`)
                 this.executePos();
@@ -232,7 +272,7 @@ const moveLogic = {
 
             }
     
-            if (increment > processData.moveablePos.length) {
+            if (increment > data.moveablePos.length) {
 
                 console.log(`invalid position`);
                 return 'exit1\n';
@@ -244,18 +284,18 @@ const moveLogic = {
 
     setPos(input: string): void {
 
-        const movAccessKey: string[] = input.split('');
+        const movKey: string[] = input.split('');
         
-        for (let i: number = 0; i < movAccessKey.length; i++) {
+        for (let i: number = 0; i < movKey.length; i++) {
 
             switch (i) {
 
                 case 0:
-                    processData.movPos.currentPos = `${movAccessKey[i]}${movAccessKey[i += 1]}`;
+                    data.movPos.curPos = `${movKey[i]}${movKey[i += 1]}`;
                     continue;
 
                 case 3:
-                    processData.movPos.nextPos = `${movAccessKey[i]}${movAccessKey[i += 1]}`;
+                    data.movPos.nxtPos = `${movKey[i]}${movKey[i += 1]}`;
                     break;
 
                 default:
@@ -264,177 +304,215 @@ const moveLogic = {
             }
         }
     
-        processData.movPos.selecting = processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].type
+        data.movPos.select = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].type
 
         return;
     },
 
     executePos(): void {
 
-        const curIndx: number = processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos); // finds board.access that is equal to movPos.currentPos if founded, returns indx, stores in this variable
-        const targetIndx: number = processData.board.findIndex((obj: Board) => obj.access === processData.movPos.nextPos); // target index
+        const curIndx: number = data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos); // finds board.access that is equal to movPos.curPos if founded, returns indx, stores in this variable
+        const tarIndx: number = data.board.findIndex((obj: Board) => obj.access === data.movPos.nxtPos); // target index
     
-        const currentObject: Board = processData.board[curIndx]; // 00
-        const targetObject: Board = processData.board[targetIndx]; // 74
+        const curObj: Board = data.board[curIndx]; // 00
+        const tarObj: Board = data.board[tarIndx]; // 74
         
         // some kind of bruteforce, but if it works it works
-        processData.board[curIndx] = {
+        data.board[curIndx] = {
           type: 0,
           color: 0,
           behav: 0,
-          indx: currentObject.indx,
-          access: currentObject.access
+          indx: curObj.indx,
+          access: curObj.access
         };
     
-        processData.board[targetIndx] = {
-            ...currentObject,
-            indx: targetObject.indx,
-            access: targetObject.access,
-            behav: processData.board[targetIndx].behav = processData.board[targetIndx].behav + 1
+        data.board[tarIndx] = {
+            ...curObj,
+            indx: tarObj.indx,
+            access: tarObj.access,
+            behav: data.board[tarIndx].behav = data.board[tarIndx].behav + 1
         };
     
         return;
     },
 
-    pieceValidate: {
+    validate: {
 
-        manage(): void {
+        manage(): number {
 
-            processData.moveablePos = [];
-            const selecting: number = processData.movPos.selecting
+            data.moveablePos = [];
+            const select: number = data.movPos.select
     
-            if ([2, 4, 5].includes(selecting)) {
+            if ([2, 4, 5].includes(select)) {
     
                 this.queenRookBishop();
-                return;
+                return 245;
     
             }
-    
-            if ([1, 6].includes(selecting)) {
-    
-                this.kingPawn();
-                return;
-    
+
+            switch (select) {
+                case 1:
+                    this.pawn();
+                    return 1;
+                case 3:
+                    this.knight();
+                    return 3;
+                case 6:
+                    this.king();
+                    return 6;
+                case 0:
+                    return 0;
             }
     
-            if (3 === selecting) {
-    
-                this.knight();
-                return;
-    
-            }
-    
-            if (0 === selecting) {
-    
-                return;
-    
-            }
-    
-            return;
+            return 400;
         },
 
-        blockingDetection(): number[] {
+        enemColor(): number[] {
 
-            let opponentcolor: number = 0;
-            const cachingArray: number[] = [];
-            const friendlycolor: number = processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].color;
+            let oppn: number = 0;
+            const cache: number[] = [];
+            const fnly: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color;
 
 
-            switch (friendlycolor) {
+            switch (fnly) {
 
                 case 8:
-                    opponentcolor = 16;
+                    oppn = 16;
                     break;
 
                 case 16:
-                    opponentcolor = 8;
+                    oppn = 8;
                     break;
 
             }
 
-            cachingArray.push(opponentcolor);
-            cachingArray.push(friendlycolor);
+            cache.push(oppn);
+            cache.push(fnly);
 
-            return cachingArray;
+            return cache;
         },
 
         queenRookBishop() {
 
-            const color: number[] = this.blockingDetection();
-            const startDirectionIndex: number = (processData.movPos.selecting === Pieces.Bishop) ? 4 : 0;
-            const endDirectionIndex: number = (processData.movPos.selecting === Pieces.Rook) ? 4 : 8;
+            const color: number[] = this.enemColor();
+            const stDirIndx: number = (data.movPos.select === Pieces.Bishop) ? 4 : 0;
+            const enDirIndx: number = (data.movPos.select === Pieces.Rook) ? 4 : 8;
+            
+            for (let dirIndx: number = stDirIndx; dirIndx < enDirIndx; dirIndx++) {
+                let enemCount: number = 0;
+                
+                for (let i: number = 0; i < data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]; i++) {
         
-            for (let directionIndex: number = startDirectionIndex; directionIndex < endDirectionIndex; directionIndex++) {
-
-                for (let i: number = 0; i < processData.sqToEdge[processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].indx][readOnlyData.dirIndx[directionIndex]]; i++) {
-        
-                    // sqToEdge[movPos.currentPos NOTE: 0-63][directionIndexKey[directionIndex] NOTE: only return targeted direction key]; in this case is
-                    // sqToEdge["0"]["northDir"] or sqToEdge[0].northDir
+                    // sqToEdge[movPos.curPos NOTE: 0-63][dirIndxKey[dirIndx] NOTE: only return targeted direction key]; in this case is
+                    // sqToEdge["0"]["NDir"] or sqToEdge[0].NDir
                     
-                    const preComputedTargetSquare: number = processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].indx + readOnlyData.dirOffsets[directionIndex] * ( i + 1 );
+                    const targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsets[dirIndx] * ( i + 1 );
         
                     // if block by friendly piece then unable to move any further
-                    if (processData.board[preComputedTargetSquare].color === color[1]) {
+                    if (data.board[targetSq].color === color[1]) {
 
                         break;
 
                     }
         
                     // cant move any further after capture enemy piece
-                    if (processData.board[preComputedTargetSquare].color === color[0]) {
-
-                        break;
+                    if (data.board[targetSq].color === color[0]) {
+                        if (enemCount === 1) {
+                            break;
+                        }
+                        data.moveablePos.push(targetSq);
+                        enemCount++;
 
                     }
                     
-                    // console.log(preComputedTargetSquare);
-                    processData.moveablePos.push(preComputedTargetSquare);
+                    // console.log(targetSq);
+                    data.moveablePos.push(targetSq);
                 }
             }
         },
 
-        kingPawn() {
+        king() {
 
-            const color: number[] = this.blockingDetection();
-            const endDirectionIndex: number = (processData.movPos.selecting === Pieces.Pawn) ? 1 : 8;
+            const color: number[] = this.enemColor();
 
-            for (let directionIndex: number = 0; directionIndex < endDirectionIndex; directionIndex++) {
+            for (let dirIndx: number = 0; dirIndx < 8; dirIndx++) {
 
-                for (let i: number = 0; i < Math.min(1, processData.sqToEdge[processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].indx][readOnlyData.dirIndx[directionIndex]]); i++) {
+                for (let i: number = 0; i < Math.min(1, data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]); i++) {
 
-                    const preComputedTargetSquare: number = processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].indx + readOnlyData.dirOffsets[directionIndex];
-                    console.log(preComputedTargetSquare);
+                    const targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsets[dirIndx];
     
-                    if (processData.board[preComputedTargetSquare].color === color[1]) {
-
-                        break;
-
-                    }
-    
-                    if (processData.board[preComputedTargetSquare].color === color[0]) {
+                    if (data.board[targetSq].color === color[1]) {
 
                         break;
 
                     }
 
-                    processData.moveablePos.push(preComputedTargetSquare);
+                    data.moveablePos.push(targetSq);
                 }
             }
+        },
+
+        pawn() {
+            
+            const color: number[] = this.enemColor();
+
+            for (let dirIndx: number = 0; dirIndx < 3; dirIndx++) {
+
+                for (let i: number = 0; i < Math.min(1, data.sqToEdge[data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx][readOnlyData.dirIndx[dirIndx]]); i++) {
+
+                    let targetSq: number = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn[dirIndx];
+
+                    if (data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].color === 16) {
+
+                        targetSq = data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].indx + readOnlyData.dirOffsetsPawn2[dirIndx];
+
+                    }
+
+                    if (data.board[targetSq].color === color[1]) {
+
+                        break;
+
+                    }
+
+                    if (data.board[targetSq].color === color[0]) {
+
+                        if (dirIndx === 0) {
+
+                            break;
+
+                        }
+                        
+                    }
+
+                    if (data.board[targetSq].color !== color[0]) {
+
+                        if (dirIndx === 1 || dirIndx === 2) {
+
+                            break;
+
+                        }
+
+                    }
+
+                    data.moveablePos.push(targetSq);
+                }
+            }
+
         },
 
         knight() {
 
-            const color: number[] = this.blockingDetection();
-            const currentRow = parseInt((processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].access[0]))
-            const currentCol = parseInt((processData.board[processData.board.findIndex((obj: Board) => obj.access === processData.movPos.currentPos)].access[1]))
+            const color: number[] = this.enemColor();
+            const curRow = parseInt((data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].access[0]))
+            const curCol = parseInt((data.board[data.board.findIndex((obj: Board) => obj.access === data.movPos.curPos)].access[1]))
         
-            for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
+            for (let dirIndx = 0; dirIndx < 8; dirIndx++) {
 
-                const rowOffset = readOnlyData.dirOffsetsKnight[directionIndex][0];
-                const colOffset = readOnlyData.dirOffsetsKnight[directionIndex][1];
+                const rowOffset = readOnlyData.dirOffsetsKnight[dirIndx][0];
+                const colOffset = readOnlyData.dirOffsetsKnight[dirIndx][1];
 
-                const newRow = currentRow + rowOffset;
-                const newCol = currentCol + colOffset;
+                const newRow = curRow + rowOffset;
+                const newCol = curCol + colOffset;
         
                 // corner check
                 if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) {
@@ -443,26 +521,29 @@ const moveLogic = {
 
                 }
         
-                const preComputedTargetSquare = newRow * 8 + newCol;
+                const targetSq = newRow * 8 + newCol;
 
-                if (processData.board[preComputedTargetSquare].color === color[1]) {
-
-                    continue;
-
-                }
-
-                if (processData.board[preComputedTargetSquare].color === color[0]) {
+                if (data.board[targetSq].color === color[1]) {
 
                     continue;
 
                 }
 
-                processData.moveablePos.push(preComputedTargetSquare);
+                if (data.board[targetSq].color === color[0]) {
+
+                    continue;
+
+                }
+
+                data.moveablePos.push(targetSq);
             }
         }
-        
     }
 }
 
-console.log(moveLogic.move('01>74'));
-console.log(processData.movPos);
+console.log(moveLogic.move('13>23'));
+console.log(moveLogic.move('23>33'));
+console.log(moveLogic.move('62>52'));
+console.log(moveLogic.move('52>42'));
+console.log(moveLogic.move('33>42'));
+console.log(data.movPos);
