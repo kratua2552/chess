@@ -1,5 +1,3 @@
 # Chessgame
 chess without lib \n
-kinda \n
-why did i do dis \n
-anyways
+to be implemented: opening, timer, pawn's en passant, link to an actual GUI
