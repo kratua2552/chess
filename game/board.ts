@@ -44,11 +44,6 @@ export class ChessBoard {
                 }
             }
         }
-
-        data.game = {
-            board: 1,
-            turn: 8
-        }
     
         return data.board;
     }
@@ -98,7 +93,9 @@ export class ChessBoard {
                 mov: 0,
         
                 indx: i,
-                access: `${row}${col}`
+                access: `${row}${col}`,
+
+                ENGINESIDEDATA_ALLPOSSIBLEPOSITION: undefined,
             }
         })
 

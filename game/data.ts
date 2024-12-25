@@ -5,6 +5,8 @@ export type Board = {
     mov: number,
     indx: number,
     access: string
+
+    ENGINESIDEDATA_ALLPOSSIBLEPOSITION: number[] | undefined,
 }
 
 export type SquareToEdge = {
@@ -32,8 +34,9 @@ export type ReadOnlyData = {
     dirOffsets: ReadonlyArray<number>, 
     dirIndx: ReadonlyArray<string>, 
     dirOffsetsKnight: ReadonlyArray<[number, number]>,
-    dirOffsetsPawn: ReadonlyArray<number>,
-    dirOffsetsPawn2: ReadonlyArray<number>
+    dirOffsetsPawnWhite: ReadonlyArray<number>,
+    dirOffsetsPawnBlack: ReadonlyArray<number>,
+    dirIndxPawn: ReadonlyArray<string>
 }
 
 export type Profiles = {
@@ -70,49 +73,11 @@ export class Pieces {
     static Black = 16;
 }
 
-export const data: { board: Board[], sqToEdge: SquareToEdge[], movPos: Move, moveablePos: any[], whitePfp: Profiles, blackPfp: Profiles, castlingPos: Castle, game: Game } = {
+export const data: { board: Board[], sqToEdge: SquareToEdge[] } = {
 
     board: [],
 
     sqToEdge: [],
-    
-    movPos: {
-        curPos: '0',
-        nxtPos: '0',
-        select: 0,
-    },
-
-    moveablePos: [],
-
-    whitePfp: {
-        win: 0,
-        lose: 0,
-        draw: 0,
-        match: 0,
-
-        kingPos: 0,
-        score: 0,
-    },
-
-    blackPfp: {
-        win: 0,
-        lose: 0,
-        draw: 0,
-        match: 0,
-
-        kingPos: 0,
-        score: 0,
-    },
-
-    castlingPos: {
-        kingPos: '0',
-        rookPos: '0',
-    },
-
-    game: {
-        board: 0,
-        turn: 0
-    }
 
 }
 
@@ -127,12 +92,12 @@ export const readOnlyData: ReadOnlyData = {
         8, -8, -1, 1, 7, -7, 9, -9
     ],
 
-    dirOffsetsPawn: [
-        8, 7, 9
+    dirOffsetsPawnWhite: [
+        7, 9
     ],
 
-    dirOffsetsPawn2: [
-        -8, -7, -9
+    dirOffsetsPawnBlack: [
+        -7, -9
     ],
     
     dirIndx: [
@@ -144,8 +109,10 @@ export const readOnlyData: ReadOnlyData = {
         'SEDir',
         'NEDir',
         'SWDir',
+    ],
+
+    dirIndxPawn: [
+        'NWDir',
+        'NEDir'
     ]
-
-    
-
 }
