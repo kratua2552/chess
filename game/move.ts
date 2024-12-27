@@ -9,7 +9,8 @@ export class Engine {
         this.val = new Validate();
     }
 
-    generate(): void {
+    generate(): number {
+        
         for (let stSq: number = 0; stSq < data.board.length; stSq++) {
             const piece = data.board[stSq]
 
@@ -34,10 +35,12 @@ export class Engine {
             }
         }
 
-        return;
+        return 1;
     }
 
-    moveData(curIndx: number, nxtIndx: number): void {
+    moveData(curIndx: number, nxtIndx: number): number {
+        
+        data.prevPos.unshift([data.board[curIndx], data.board[nxtIndx]]);
 
         data.board[nxtIndx] = {
             ...data.board[curIndx],
@@ -45,7 +48,7 @@ export class Engine {
 
             indx: data.board[nxtIndx].indx,
             access: data.board[nxtIndx].access,
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: undefined
+            ESD_posbPos: undefined,
         }
 
         data.board[curIndx] = {
@@ -53,20 +56,41 @@ export class Engine {
             type: 0,
             color: 0,
             mov: 0,
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: undefined
+            ESD_posbPos: undefined,
         }
 
-        return;
+        return 1;
+    }
+
+    undoData(): number {
+
+        const cache = {
+            cur: data.prevPos[0][0].indx,
+            nxt: data.prevPos[0][1].indx
+        }
+
+        data.board[data.prevPos[0][0].indx] = {
+            ...data.prevPos[0][0]
+        }
+
+        data.board[data.prevPos[0][1].indx] = {
+            ...data.prevPos[0][1]
+        }
+
+        data.prevPos.shift();
+        return 1;
     }
     
-    move(curIndx: number, nxtIndx: number): string {
+    move(curIndx: number, nxtIndx: number): number {
 
-        if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 'invalid_01';
-        if (data.board[curIndx].ENGINESIDEDATA_ALLPOSSIBLEPOSITION.includes(nxtIndx)) {
+        if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 401;
+        if (data.board[curIndx].ESD_posbPos.includes(nxtIndx)) {
             this.moveData(curIndx, nxtIndx);
-            return 'success'
+
+            return 201;
         } else {
-            return 'invalid_02'
+
+            return 402;
         }
     }
 }
@@ -77,8 +101,11 @@ chess.init('default');
 chess.dir();
 
 const engine = new Engine();
-engine.generate();
-console.log(engine.move(8, 40));
-engine.generate();
 
-console.log(data.board[8]);
+engine.generate();
+engine.move(8, 24);
+engine.generate();
+engine.move(24, 32);
+engine.generate();
+engine.move(32, 40);
+engine.generate();

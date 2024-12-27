@@ -6,7 +6,7 @@ export type Board = {
     indx: number,
     access: string
 
-    ENGINESIDEDATA_ALLPOSSIBLEPOSITION: number[] | undefined,
+    ESD_posbPos: number[] | undefined
 }
 
 export type SquareToEdge = {
@@ -23,40 +23,13 @@ export type SquareToEdge = {
     access: string
 }
 
-export type Move = {
-    curPos: string, 
-    nxtPos: string,
-    select: number,
-}
-
-
 export type ReadOnlyData = {
-    dirOffsets: ReadonlyArray<number>, 
     dirIndx: ReadonlyArray<string>, 
+    dirIndxPawn: ReadonlyArray<string>,
+    dirOffsets: ReadonlyArray<number>, 
     dirOffsetsKnight: ReadonlyArray<[number, number]>,
     dirOffsetsPawnWhite: ReadonlyArray<number>,
-    dirOffsetsPawnBlack: ReadonlyArray<number>,
-    dirIndxPawn: ReadonlyArray<string>
-}
-
-export type Profiles = {
-    win: number,
-    lose: number,
-    draw: number,
-    match: number,
-
-    kingPos: number,
-    score: number
-}
-
-export type Castle = {
-    kingPos: string,
-    rookPos: string,
-}
-
-export type Game = {
-    board: number,
-    turn: number
+    dirOffsetsPawnBlack: ReadonlyArray<number>
 }
 
 /////////////////////////////////////////////////////////////
@@ -73,16 +46,13 @@ export class Pieces {
     static Black = 16;
 }
 
-export const data: { board: Board[], sqToEdge: SquareToEdge[] } = {
-
+export const data: { board: Board[], sqToEdge: SquareToEdge[], prevPos: any[][] } = {
     board: [],
-
     sqToEdge: [],
-
+    prevPos: []
 }
 
 export const readOnlyData: ReadOnlyData = {
-
     dirOffsetsKnight: [
         [-2, -1], [-1, -2], [1, -2], [2, -1], 
         [2, 1], [1, 2], [-1, 2], [-2, 1]

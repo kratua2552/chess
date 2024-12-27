@@ -2,3 +2,6 @@
 /package-lock.json
 /package.json
 /.vs
+/.vscode
+/tsconfig.json
+/debug.png

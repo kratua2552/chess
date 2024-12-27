@@ -95,7 +95,7 @@ export class ChessBoard {
                 indx: i,
                 access: `${row}${col}`,
 
-                ENGINESIDEDATA_ALLPOSSIBLEPOSITION: undefined,
+                ESD_posbPos: undefined
             }
         })
 

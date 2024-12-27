@@ -30,7 +30,7 @@ export class Validate {
 
         data.board[curIndx] = {
             ...data.board[curIndx],
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: cache,
+            ESD_posbPos: cache,
         }
 
         cache = [];
@@ -51,7 +51,7 @@ export class Validate {
 
         data.board[curIndx] = {
             ...data.board[curIndx],
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: cache
+            ESD_posbPos: cache
         }
 
         cache = [];
@@ -95,7 +95,7 @@ export class Validate {
 
         data.board[curIndx] = {
             ...data.board[curIndx],
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: cache
+            ESD_posbPos: cache
         }
 
         cache = [];
@@ -126,12 +126,10 @@ export class Validate {
 
         data.board[curIndx] = {
             ...data.board[curIndx],
-            ENGINESIDEDATA_ALLPOSSIBLEPOSITION: cache
+            ESD_posbPos: cache
         }
 
         cache = [];
         return data.board[curIndx];
     }
 }
-
-    
