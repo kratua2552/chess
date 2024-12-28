@@ -21,8 +21,12 @@ class Interface {
         this.board = new ChessBoard();
 
         const state = this.config(start, rules, time);
+
         if (state) {
             this.board.dirInit();
+            
+            if (!clientData.gameConfig) return;
+
             this.board.init(clientData.gameConfig.boardType);
             if (clientData.gameConfig.isUndoAllowed) this.engine.undo = true;
 
@@ -36,17 +40,16 @@ class Interface {
             clientData.gameStatus.isGameStarted = false;
             
             delete clientData.gameStatus.currentTurn;
-            delete clientData.gameConfig.boardType;
-            delete clientData.gameConfig.isUndoAllowed;
-            delete clientData.gameConfig.timeControl;
+            delete clientData.gameStatus.gameTime;
             delete clientData.profiles
-            delete clientData.gameConfig.timeLimitPerGame;
-            delete clientData.gameConfig.timeLimitPerMove;
+            delete clientData.gameConfig;
 
             return 0;
         }
 
         if (!clientData.gameStatus.isGameStarted && start === 1) {
+
+            if (!rules) return 0;
 
             clientData.gameConfig = {
                 boardType: rules.type,
@@ -55,7 +58,8 @@ class Interface {
 
             clientData.gameStatus = {
                 isGameStarted: true,
-                currentTurn: 8
+                currentTurn: 8,
+                gameTime: 0
             }
 
             clientData.profiles = {
@@ -77,7 +81,7 @@ class Interface {
                 clientData.gameConfig.timeControl = time.timeControl;
 
                 if (time.timeControl === 'game') {
-                    clientData.gameConfig.timeLimitPerGame = { timeLimit: time.timeLimit };
+                    clientData.gameConfig.timeLimitPerGame = { timeLimit: time.timeLimit || 0 };
                     clientData.profiles = {
                         white: {
                             ...clientData.profiles.white,
@@ -93,7 +97,7 @@ class Interface {
 
                 if (time.timeControl === 'move') {
                     clientData.gameConfig.timeLimitPerMove = { 
-                        timeLimit: time.timeLimit, 
+                        timeLimit: time.timeLimit || 0, 
                         timeIncrement: time.increment ?? 0
                     }
 
@@ -126,6 +130,9 @@ const time: TimeControl = {
 }
 
 const game = new Interface(1, rules, time);
+console.log(clientData);
+game.config(-1);
+console.log(`\n`)
 console.log(clientData);
 
 

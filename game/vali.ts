@@ -63,8 +63,8 @@ export class Validate {
         const pawnBehav: number = (!data.board[curIndx].mov) ? 2 : 1;
 
         let cache: number[] = [];
-        let color: number;
-        let dirOffsetsPawn: ReadonlyArray<number>;
+        let color: number = 0;
+        let dirOffsetsPawn: ReadonlyArray<number> | number = 0;;
 
         if (data.board[curIndx].color === 8) {
             dirOffsetsPawn = readOnlyData.dirOffsetsPawnWhite;
@@ -74,6 +74,8 @@ export class Validate {
             dirOffsetsPawn = readOnlyData.dirOffsetsPawnBlack;
             color = -8;
         }
+
+        if (!color || !dirOffsetsPawn) return 400;
 
         for (let i: number = 0; i < pawnBehav; i++) {
             const targetSq: number = curIndx + ( (i + 1) * color );

@@ -33,7 +33,7 @@ export type ReadOnlyData = {
 }
 
 interface ClientData {
-    gameStatus: { isGameStarted: boolean; currentTurn?: number }
+    gameStatus: { isGameStarted: boolean; currentTurn?: number; gameTime?: number }
 
     gameConfig?: { 
         isUndoAllowed: boolean; boardType: string; timeControl?: string;

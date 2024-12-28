@@ -1,3 +1,4 @@
+import { ChessBoard } from './board.ts';
 import { data } from './data.ts';
 import { Validate } from './vali.ts';
 
@@ -84,6 +85,8 @@ export class Engine {
     move(curIndx: number, nxtIndx: number): number {
 
         if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 401;
+        if (!data.board[curIndx].ESD_posbPos) return 402;
+        
         if (data.board[curIndx].ESD_posbPos.includes(nxtIndx)) {
             this.moveData(curIndx, nxtIndx);
 
