@@ -3,8 +3,9 @@ import { data } from './data.ts';
 import { Validate } from './vali.ts';
 
 export class Engine {
-    val: Validate;
+    private val: Validate;
     undo: boolean;
+    turn: number;
 
     constructor() {
         this.val = new Validate();
@@ -83,17 +84,24 @@ export class Engine {
     }
     
     move(curIndx: number, nxtIndx: number): number {
+        if (this.turn === data.board[curIndx].color) {
+            this.generate();
+            
+            if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 401;
+            if (!data.board[curIndx].ESD_posbPos) return 402;
+            
+            if (data.board[curIndx].ESD_posbPos.includes(nxtIndx)) {
+                this.moveData(curIndx, nxtIndx);
+                
+                this.generate();
+                return 200;
+            } else {
+    
+                return 403;
+            }
 
-        if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 401;
-        if (!data.board[curIndx].ESD_posbPos) return 402;
-        
-        if (data.board[curIndx].ESD_posbPos.includes(nxtIndx)) {
-            this.moveData(curIndx, nxtIndx);
-
-            return 201;
-        } else {
-
-            return 402;
         }
+
+        return 404;
     }
 }

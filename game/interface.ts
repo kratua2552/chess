@@ -1,5 +1,5 @@
 import { ChessBoard } from "./board";
-import { clientData } from "./data";
+import { clientData, data } from "./data";
 import { Engine } from "./move";
 
 interface Rules { 
@@ -13,32 +13,23 @@ interface TimeControl {
 /////////////////////////////////////////////////////
 
 class Interface {
-    engine: Engine;
-    board: ChessBoard;
+    private engine: Engine;
+    private board: ChessBoard;
+    private timer: Timer;
 
     constructor(start: number, rules?: Rules, time?: TimeControl) {
         this.engine = new Engine();
         this.board = new ChessBoard();
+        this.timer = new Timer();
 
-        const state = this.config(start, rules, time);
-
-        if (state) {
-            this.board.dirInit();
-            
-            if (!clientData.gameConfig) return;
-
-            this.board.init(clientData.gameConfig.boardType);
-            if (clientData.gameConfig.isUndoAllowed) this.engine.undo = true;
-
-        }
-
+        this.config(start, rules, time);
     }
 
     config (start: number, rules?: Rules, time?: TimeControl): number {
         
         if (clientData.gameStatus.isGameStarted && start === -1) {
+            this.board.clear();
             clientData.gameStatus.isGameStarted = false;
-            
             delete clientData.gameStatus.currentTurn;
             delete clientData.gameStatus.gameTime;
             delete clientData.profiles
@@ -61,6 +52,11 @@ class Interface {
                 currentTurn: 8,
                 gameTime: 0
             }
+
+            if (clientData.gameStatus.currentTurn) this.engine.turn = clientData.gameStatus.currentTurn;
+            if (clientData.gameConfig.isUndoAllowed) this.engine.undo = rules.undo;
+            this.board.init(clientData.gameConfig.boardType);
+            this.board.dirInit();
 
             clientData.profiles = {
 
@@ -119,35 +115,106 @@ class Interface {
 
         return 1;
     }
+
+    play(curIndx: number, nxtIndx: number): number {
+        const status: number = this.engine.move(curIndx, nxtIndx);
+
+        if (status === 200) {
+            clientData.gameStatus.currentTurn = (8 === clientData.gameStatus.currentTurn) ? 16 : 8;
+            this.engine.turn = clientData.gameStatus.currentTurn;
+
+            if (clientData.gameStatus.currentTurn === 16) {
+                if (this.timer.timeRemaining !== undefined) clientData.profiles.white.timeRemaining = this.timer.timeClear().toFixed(1);
+                this.timer.timeCounter(clientData.profiles?.black.timeRemaining, 100);
+            }
+
+            if (clientData.gameStatus.currentTurn === 8) {
+                if (this.timer.timeRemaining !== undefined) clientData.profiles.black.timeRemaining = this.timer.timeClear().toFixed(1);
+                this.timer.timeCounter(clientData.profiles?.white.timeRemaining, 100);
+            }
+            
+            return 200;
+        }
+
+        return 400;
+    }
 }
+
+class Timer  {
+    timeRemaining: number;
+    private timer: NodeJS.Timeout | undefined;
+
+    timeCounter(count: number, speedMultiplier: number): void {
+        this.timeRemaining = count;
+        
+        this.timer = setInterval(() => {
+            if (this.timeRemaining <= 0) {
+                console.log("timesup");
+                clearInterval(this.timer);
+                return;
+
+            } else {
+                this.timeRemaining -= 0.1;
+            }
+        }, speedMultiplier);
+
+        return;
+    }
+
+    timeClear() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = undefined;
+        }
+
+        return this.timeRemaining;
+    }
+}
+
 
 const rules: Rules = {
     undo: true, type: 'default'
 }
 
 const time: TimeControl = {
-    timeControl: 'move', timeLimit: 30
+    timeControl: 'game', timeLimit: 30
 }
 
 const game = new Interface(1, rules, time);
-console.log(clientData);
-game.config(-1);
-console.log(`\n`)
-console.log(clientData);
+console.log(clientData.profiles);
 
+(async() => {
 
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+    game.play(8, 24);
+    console.log(data.board[24]);
+    console.log(clientData.profiles);
 
+    await sleep(1210);
 
+    game.play(48, 32);
+    console.log(data.board[32]);
+    console.log(clientData.profiles);
 
+    await sleep(1210);
 
+    game.play(9, 25);
+    console.log(data.board[25]);
+    console.log(clientData.profiles);
 
+    await sleep(1210);
 
+    game.play(49, 33);
+    console.log(data.board[33]);
+    console.log(clientData.profiles);
 
+    await sleep(1210);
 
-
-
-
+    game.play(1, 16);
+    console.log(data.board[16]);
+    console.log(clientData.profiles);
+})()
 
 
 /*

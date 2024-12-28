@@ -84,7 +84,7 @@ export class ChessBoard {
         return data.sqToEdge;
     }
 
-    shuffle(): string[] {
+    private shuffle(): string[] {
 
         const st: string[] = 'rnbqkbnr'.split('');
         let res: string[] = [];
