@@ -124,13 +124,13 @@ class Interface {
             this.engine.turn = clientData.gameStatus.currentTurn;
 
             if (clientData.gameStatus.currentTurn === 16) {
-                if (this.timer.timeRemaining !== undefined) clientData.profiles.white.timeRemaining = this.timer.timeClear().toFixed(1);
-                this.timer.timeCounter(clientData.profiles?.black.timeRemaining, 100);
+                if (this.timer.timeRemaining !== undefined && clientData.profiles) clientData.profiles.white.timeRemaining = Number(this.timer.timeClear().toFixed(1));
+                if (clientData.profiles?.black.timeRemaining) this.timer.timeCounter(clientData.profiles?.black.timeRemaining, 100);
             }
 
             if (clientData.gameStatus.currentTurn === 8) {
-                if (this.timer.timeRemaining !== undefined) clientData.profiles.black.timeRemaining = this.timer.timeClear().toFixed(1);
-                this.timer.timeCounter(clientData.profiles?.white.timeRemaining, 100);
+                if (this.timer.timeRemaining !== undefined && clientData.profiles) clientData.profiles.black.timeRemaining = Number(this.timer.timeClear().toFixed(1));
+                if (clientData.profiles?.white.timeRemaining) this.timer.timeCounter(clientData.profiles?.white.timeRemaining, 100);
             }
             
             return 200;
