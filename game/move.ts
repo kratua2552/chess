@@ -1,9 +1,9 @@
-import { ChessBoard } from './board.ts';
 import { data } from './data.ts';
 import { Validate } from './vali.ts';
 
 export class Engine {
     val: Validate;
+    undo: boolean;
 
     constructor() {
         this.val = new Validate();
@@ -64,21 +64,21 @@ export class Engine {
 
     undoData(): number {
 
-        const cache = {
-            cur: data.prevPos[0][0].indx,
-            nxt: data.prevPos[0][1].indx
+        if (this.undo) {
+            data.board[data.prevPos[0][0].indx] = {
+                ...data.prevPos[0][0]
+            }
+    
+            data.board[data.prevPos[0][1].indx] = {
+                ...data.prevPos[0][1]
+            }
+    
+            data.prevPos.shift();
+            return 1;
+
         }
 
-        data.board[data.prevPos[0][0].indx] = {
-            ...data.prevPos[0][0]
-        }
-
-        data.board[data.prevPos[0][1].indx] = {
-            ...data.prevPos[0][1]
-        }
-
-        data.prevPos.shift();
-        return 1;
+        return 0;
     }
     
     move(curIndx: number, nxtIndx: number): number {
@@ -94,18 +94,3 @@ export class Engine {
         }
     }
 }
-
-
-const chess = new ChessBoard();
-chess.init('default');
-chess.dir();
-
-const engine = new Engine();
-
-engine.generate();
-engine.move(8, 24);
-engine.generate();
-engine.move(24, 32);
-engine.generate();
-engine.move(32, 40);
-engine.generate();

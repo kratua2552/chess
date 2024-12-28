@@ -15,6 +15,11 @@ export class ChessBoard {
 
         if (fen === 'default') fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 
+        if (fen === 'shuffled') {
+            const cache = this.shuffle();
+            fen = `${cache[0]}/pppppppp/8/8/8/8/PPPPPPPP/${cache[1]}`;
+        }
+
         const fenArr: string[] = fen.split('');
         let row: number = 7, col: number = 0;
     
@@ -48,7 +53,7 @@ export class ChessBoard {
         return data.board;
     }
 
-    dir(): SquareToEdge[] {
+    dirInit(): SquareToEdge[] {
 
         for (let row: number = 0; row < 8; row++) {
 
@@ -77,6 +82,26 @@ export class ChessBoard {
         }
     
         return data.sqToEdge;
+    }
+
+    shuffle(): string[] {
+
+        const st: string[] = 'rnbqkbnr'.split('');
+        let res: string[] = [];
+
+        for (let i = st.length - 1; i > 0; i--) {
+            const rn = Math.floor(Math.random() * (i + 1));
+
+            const tmp = st[i];
+            st[i] = st[rn];
+            st[rn] = tmp;
+
+        }
+
+        res.push(st.join(''));
+        res.push(st.join('').toUpperCase());
+
+        return res;
     }
 
     clear(): Board[] {

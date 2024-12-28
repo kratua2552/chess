@@ -32,7 +32,28 @@ export type ReadOnlyData = {
     dirOffsetsPawnBlack: ReadonlyArray<number>
 }
 
+interface ClientData {
+    gameStatus: { isGameStarted: boolean; currentTurn?: number }
+
+    gameConfig?: { 
+        isUndoAllowed: boolean; boardType: string; timeControl?: string;
+        timeLimitPerMove?: { timeLimit: number; timeIncrement?: number };
+        timeLimitPerGame?: { timeLimit: number; }
+    }
+
+    profiles?: {
+        white: { score?: number; move?: number; totalTime?: number; timeRemaining?: number };
+        black: { score?: number; move?: number; totalTime?: number; timeRemaining?: number };
+    }
+}
+
 /////////////////////////////////////////////////////////////
+
+export const clientData: ClientData = {
+    gameStatus: {
+        isGameStarted: false
+    }
+}
 
 export class Pieces {
     static Pawn = 1;
