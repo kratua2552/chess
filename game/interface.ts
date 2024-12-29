@@ -130,41 +130,69 @@ class Interface {
         const status: number = this.engine.move(curIndx, nxtIndx);
 
         if (status === 200) {
-            clientData.gameStatus.currentTurn = (8 === clientData.gameStatus.currentTurn) ? 16 : 8;
-            this.engine.turn = clientData.gameStatus.currentTurn;
-
-            if (clientData.gameStatus.currentTurn === 16) {
-                if (this.timer.timeRemaining !== undefined && clientData.profiles) clientData.profiles.white.timeRemaining = Number(this.timer.timeClear().toFixed(1));
-                if (clientData.profiles?.black.timeRemaining) this.timer.timeCounter(clientData.profiles?.black.timeRemaining, 100);
-            }
-
-            if (clientData.gameStatus.currentTurn === 8) {
-                if (this.timer.timeRemaining !== undefined && clientData.profiles) clientData.profiles.black.timeRemaining = Number(this.timer.timeClear().toFixed(1));
-                if (clientData.profiles?.white.timeRemaining) this.timer.timeCounter(clientData.profiles?.white.timeRemaining, 100);
-            }
-            
+            this.updateTime();
             return 200;
         }
 
         return 400;
     }
+
+    updateTime(): void {
+        clientData.gameStatus.currentTurn = (8 === clientData.gameStatus.currentTurn) ? 16 : 8;
+        this.engine.turn = clientData.gameStatus.currentTurn;
+
+        if (clientData.gameStatus.currentTurn === 16) {
+            if (this.timer.timeRemaining !== undefined && clientData.profiles) {
+                clientData.profiles.white.timeRemaining = Number(this.timer.minusTimeClear().toFixed(1));
+                if (clientData.gameConfig?.timeLimitPerGame !== undefined) clientData.profiles.white.totalTime = clientData.gameConfig?.timeLimitPerGame?.timeLimit - clientData.profiles.white.timeRemaining;
+            }
+
+            if (clientData.profiles?.black.timeRemaining && clientData.profiles.black.totalTime !== undefined) {
+                this.timer.minusTimeCounter(clientData.profiles.black.timeRemaining, 100);
+            }
+
+        }
+
+        if (clientData.gameStatus.currentTurn === 8) {
+            if (this.timer.timeRemaining !== undefined && clientData.profiles) {
+                clientData.profiles.black.timeRemaining = Number(this.timer.minusTimeClear().toFixed(1));
+                if (clientData.gameConfig?.timeLimitPerGame !== undefined) clientData.profiles.black.totalTime = clientData.gameConfig?.timeLimitPerGame?.timeLimit - clientData.profiles.black.timeRemaining;
+            }
+
+            if (clientData.profiles?.white.timeRemaining && clientData.profiles.white.totalTime !== undefined) {
+                this.timer.minusTimeCounter(clientData.profiles.white.timeRemaining, 100);
+            }
+        }
+
+        if (clientData.profiles?.white.totalTime !== undefined && clientData.profiles.black.totalTime !== undefined) clientData.gameStatus.gameTime = clientData.profiles?.white.totalTime + clientData.profiles?.black.totalTime;
+
+        return;
+    }
 }
 
 class Timer  {
     timeRemaining: number;
-    private timer: NodeJS.Timeout | undefined;
+    private minusTimer: NodeJS.Timeout | undefined;
 
-    timeCounter(count: number, speedMultiplier: number): void {
+    minusTimeCounter(count: number, speedMultiplier: number): void {
         this.timeRemaining = count;
         
-        this.timer = setInterval(() => {
+        this.minusTimer = setInterval(() => {
             if (this.timeRemaining <= 0) {
                 console.log(`timesup ${clientData.gameStatus.currentTurn} lose, cannot play any further type <game.config(-1)> to disband board`);
                 
-                clearInterval(this.timer);
+                clearInterval(this.minusTimer);
                 if (clientData.profiles?.white.timeRemaining && clientData.profiles.black.timeRemaining) {
-                    if (clientData.gameStatus.currentTurn === 16) clientData.profiles.black.timeRemaining = 0;
-                    if (clientData.gameStatus.currentTurn === 8) clientData.profiles.white.timeRemaining = 0;
+                    if (clientData.gameStatus.currentTurn === 16) {
+                        clientData.profiles.black.timeRemaining = 0;
+                        if (clientData.gameConfig?.timeLimitPerGame !== undefined) clientData.profiles.black.totalTime = clientData.gameConfig?.timeLimitPerGame?.timeLimit - clientData.profiles.black.timeRemaining;
+                    }
+                    if (clientData.gameStatus.currentTurn === 8) {
+                        clientData.profiles.white.timeRemaining = 0;
+                        if (clientData.gameConfig?.timeLimitPerGame !== undefined) clientData.profiles.white.totalTime = clientData.gameConfig?.timeLimitPerGame?.timeLimit - clientData.profiles.white.timeRemaining;
+                    }
+
+                    if (clientData.profiles?.white.totalTime !== undefined && clientData.profiles.black.totalTime !== undefined) clientData.gameStatus.gameTime = clientData.profiles?.white.totalTime + clientData.profiles?.black.totalTime;
                 }
                 return;
 
@@ -177,14 +205,15 @@ class Timer  {
         return;
     }
 
-    timeClear() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = undefined;
+    minusTimeClear() {
+        if (this.minusTimer) {
+            clearInterval(this.minusTimer);
+            this.minusTimer = undefined;
         }
 
         return this.timeRemaining;
     }
+
 }
 
 
@@ -231,6 +260,8 @@ const game = new Interface(1, rules, time);
     console.log(clientData.profiles);
     
     await sleep (3000);
+    console.log(clientData.profiles);
+    console.log(clientData.gameStatus);
 
     game.config(-1);
     console.log(clientData);
