@@ -117,6 +117,16 @@ class Interface {
     }
 
     play(curIndx: number, nxtIndx: number): number {
+        if (clientData.profiles?.white.timeRemaining !== undefined && clientData.profiles.black.timeRemaining !== undefined) {
+            if (clientData.gameStatus.currentTurn === 8 && clientData.profiles?.white.timeRemaining <= 0) {
+                return 400;
+            }
+    
+            if (clientData.gameStatus.currentTurn === 16 && clientData.profiles?.black.timeRemaining <= 0) {
+                return 400;
+            }
+        }
+
         const status: number = this.engine.move(curIndx, nxtIndx);
 
         if (status === 200) {
@@ -149,11 +159,17 @@ class Timer  {
         
         this.timer = setInterval(() => {
             if (this.timeRemaining <= 0) {
-                console.log("timesup");
+                console.log(`timesup ${clientData.gameStatus.currentTurn} lose, cannot play any further type <game.config(-1)> to disband board`);
+                
                 clearInterval(this.timer);
+                if (clientData.profiles?.white.timeRemaining && clientData.profiles.black.timeRemaining) {
+                    if (clientData.gameStatus.currentTurn === 16) clientData.profiles.black.timeRemaining = 0;
+                    if (clientData.gameStatus.currentTurn === 8) clientData.profiles.white.timeRemaining = 0;
+                }
                 return;
 
             } else {
+                console.log(`> turn: ${clientData.gameStatus.currentTurn}, time left: ${this.timeRemaining.toFixed(1)}`);
                 this.timeRemaining -= 0.1;
             }
         }, speedMultiplier);
@@ -177,11 +193,10 @@ const rules: Rules = {
 }
 
 const time: TimeControl = {
-    timeControl: 'game', timeLimit: 30
+    timeControl: 'game', timeLimit: 10
 }
 
 const game = new Interface(1, rules, time);
-console.log(clientData.profiles);
 
 (async() => {
 
@@ -190,30 +205,35 @@ console.log(clientData.profiles);
     game.play(8, 24);
     console.log(data.board[24]);
     console.log(clientData.profiles);
-
-    await sleep(1210);
-
+    
+    await sleep(5400);
+    
     game.play(48, 32);
     console.log(data.board[32]);
     console.log(clientData.profiles);
-
-    await sleep(1210);
-
+    
+    await sleep(5000);
+    
     game.play(9, 25);
     console.log(data.board[25]);
     console.log(clientData.profiles);
-
-    await sleep(1210);
-
+    
+    await sleep(4500);
+    
     game.play(49, 33);
     console.log(data.board[33]);
     console.log(clientData.profiles);
-
-    await sleep(1210);
-
+    
+    await sleep(4000);
+    
     game.play(1, 16);
     console.log(data.board[16]);
     console.log(clientData.profiles);
+    
+    await sleep (3000);
+
+    game.config(-1);
+    console.log(clientData);
 })()
 
 
