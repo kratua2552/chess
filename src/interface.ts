@@ -1,4 +1,4 @@
-import { ChessBoard } from "./board";
+import { GameBoard } from "./board";
 import { clientData } from "./data";
 import { Engine } from "./move";
 
@@ -14,12 +14,12 @@ interface TimeControl {
 
 class Interface {
     private engine: Engine;
-    private board: ChessBoard;
+    private board: GameBoard;
     private timer: Timer;
 
     constructor(start: number, rules?: Rules, time?: TimeControl) {
         this.engine = new Engine();
-        this.board = new ChessBoard();
+        this.board = new GameBoard();
         this.timer = new Timer();
 
         this.config(start, rules, time);
@@ -179,7 +179,7 @@ class Interface {
 
 class Timer  {
     timeRemaining: number;
-    private minusTimer: number | undefined;
+    private minusTimer: NodeJS.Timeout | undefined;
 
     minusTimeCounter(count: number, speedMultiplier: number): void {
         this.timeRemaining = count;

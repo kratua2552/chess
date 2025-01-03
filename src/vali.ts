@@ -1,7 +1,10 @@
-import { data, readOnlyData } from './data';
+import { channel } from 'diagnostics_channel';
+import { GameBoard } from './board';
+import { Board, data, readOnlyData } from './data';
+import { cachedDataVersionTag } from 'v8';
 
 export class Validate {
-    queenRookBishop(curIndx: number): any {
+    queenRookBishop(curIndx: number): Board {
         const stDirIndx: number = (data.board[curIndx].type === 2) ? 4 : 0;
         const enDirIndx: number = (data.board[curIndx].type === 4) ? 4 : 8;
         const enemColor: number = (data.board[curIndx].color === 8) ? 16 : 8;
@@ -37,7 +40,7 @@ export class Validate {
         return data.board[curIndx];
     }
 
-    king(curIndx: number): any {
+    king(curIndx: number): Board {
         let cache: number[] = [];
         for (let dirIndx: number = 0; dirIndx < 8; dirIndx++) {
 
@@ -49,6 +52,13 @@ export class Validate {
             }
         }
 
+        if (data.board[curIndx].mov === 0) {
+
+            if (data.board[curIndx + 1].color === 0 && data.board[curIndx + 2].color === 0 && data.board[curIndx + 3].mov === 0) cache.push(curIndx + 3);
+            if (data.board[curIndx - 1].color === 0 && data.board[curIndx - 2].color === 0 && data.board[curIndx - 3].color === 0 && data.board[curIndx - 4].mov === 0) cache.push(curIndx - 4);
+            
+        }
+
         data.board[curIndx] = {
             ...data.board[curIndx],
             ESD_posbPos: cache
@@ -58,7 +68,7 @@ export class Validate {
         return data.board[curIndx];
     }
 
-    pawn(curIndx: number): any {
+    pawn(curIndx: number): Board {
         const enemColor: number = (data.board[curIndx].color === 8) ? 16 : 8;
         const pawnBehav: number = (!data.board[curIndx].mov) ? 2 : 1;
 
@@ -74,8 +84,6 @@ export class Validate {
             dirOffsetsPawn = readOnlyData.dirOffsetsPawnBlack;
             color = -8;
         }
-
-        if (!color || !dirOffsetsPawn) return 400;
 
         for (let i: number = 0; i < pawnBehav; i++) {
             const targetSq: number = curIndx + ( (i + 1) * color );
@@ -104,7 +112,7 @@ export class Validate {
         return data.board[curIndx];
     }
 
-    knight(curIndx: number): any {
+    knight(curIndx: number): Board {
         const curRow = parseInt(data.board[curIndx].access[0]);
         const curCol = parseInt(data.board[curIndx].access[1]);
         let cache: number[] = [];

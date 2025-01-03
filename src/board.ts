@@ -1,6 +1,6 @@
 import { data, Pieces, Board, SquareToEdge } from './data';
 
-export class ChessBoard {
+export class GameBoard {
 
     constructor() {
         this.clear();

@@ -13,35 +13,36 @@ export class Engine {
     generate(): number {
         
         for (let stSq: number = 0; stSq < data.board.length; stSq++) {
-            const piece = data.board[stSq]
+            const piece = data.board[stSq];
 
-            if (true) { // turn check (later)
-                if ([2,4,5].includes(piece.type)) {
+            if ([2,4,5].includes(piece.type)) {
 
-                    this.val.queenRookBishop(stSq);
-                };
+                this.val.queenRookBishop(stSq);
+            }
 
-                switch (piece.type) {
-                    case 1:
-                        this.val.pawn(stSq);
-                        break;
-                    case 3:
-                      this.val.knight(stSq);
-                        break;
-                    case 6:
-                        this.val.king(stSq);
-                        break;
-                }
-
+            switch (piece.type) {
+                case 1:
+                    this.val.pawn(stSq);
+                    break;
+                case 3:
+                  this.val.knight(stSq);
+                    break;
+                case 6:
+                    this.val.king(stSq);
+                    break;
             }
         }
 
         return 1;
     }
 
-    moveData(curIndx: number, nxtIndx: number): number {
-        
+    private moveData(curIndx: number, nxtIndx: number): number {
         data.prevPos.unshift([data.board[curIndx], data.board[nxtIndx]]);
+
+        if (data.board[curIndx].type === 6 && data.board[curIndx].mov === 0 && data.board[nxtIndx].type === 4 && data.board[nxtIndx].mov === 0) {
+            this.castling(curIndx, nxtIndx);
+            return 0;
+        }
 
         data.board[nxtIndx] = {
             ...data.board[curIndx],
@@ -77,30 +78,71 @@ export class Engine {
             data.prevPos.shift();
             return 1;
 
+        } else {
+            console.warn('undoData> not in turn')
         }
 
         return 0;
+    }
+
+    private castling(curIndx: number, nxtIndx: number): number {
+
+        const dirKing = (nxtIndx === curIndx + 3) ? 2 : -2;
+        const dirRook = (nxtIndx === curIndx + 3) ? -2 : 3;
+
+        data.board[curIndx + dirKing] = {
+            ...data.board[curIndx],
+            indx: data.board[curIndx + dirKing].indx,
+            access: data.board[curIndx + dirKing].access,
+            ESD_posbPos: undefined,
+            mov: 1
+        }
+
+        data.board[nxtIndx + dirRook] = {
+            ...data.board[nxtIndx],
+            indx: data.board[nxtIndx + dirRook].indx,
+            access: data.board[nxtIndx + dirRook].access,
+            ESD_posbPos: undefined,
+            mov: 1
+        }
+
+        data.board[curIndx] = {
+            ...data.board[curIndx],
+            type: 0,
+            color: 0,
+            mov: 0,
+            ESD_posbPos: undefined,
+        }
+
+        data.board[nxtIndx] = {
+            ...data.board[nxtIndx],
+            type: 0,
+            color: 0,
+            mov: 0,
+            ESD_posbPos: undefined,
+        }
+        return 1;
     }
     
     move(curIndx: number, nxtIndx: number): number {
         if (this.turn === data.board[curIndx].color) {
             this.generate();
             
-            if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 401;
-            if (!data.board[curIndx].ESD_posbPos) return 402;
+            if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 1;
+            if (!data.board[curIndx].ESD_posbPos) return 2;
             
             if (data.board[curIndx].ESD_posbPos.includes(nxtIndx)) {
                 this.moveData(curIndx, nxtIndx);
-                
                 this.generate();
-                return 200;
+                return 20;
             } else {
-    
-                return 403;
+                return 3;
             }
 
+        } else {
+            console.warn('move> not in turn')
         }
 
-        return 404;
+        return 4;
     }
 }
