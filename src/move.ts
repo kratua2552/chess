@@ -1,13 +1,20 @@
+import { GameBoard } from './board';
 import { data } from './data';
 import { Validate } from './vali';
 
 export class Engine {
     private val: Validate;
+    private override: boolean;
+    private undoCache: number[][] = [];
     undo: boolean;
     turn: number;
 
-    constructor() {
+    constructor(mode?: string) {
         this.val = new Validate();
+        if (mode === 'override') {
+            this.override = true;
+            console.warn('Engine Constructor> override is enabled, you may encounter game breaking bugs')
+        }
     }
 
     generate(): number {
@@ -66,23 +73,58 @@ export class Engine {
 
     undoData(): number {
 
-        if (this.undo) {
-            data.board[data.prevPos[0][0].indx] = {
-                ...data.prevPos[0][0]
+        if (!this.override) {
+            if (!this.undo || data.prevPos.length === 0) {
+                console.warn('undoData> undo is not enabled or nothing to be undone');
+                return 0;
             }
-    
-            data.board[data.prevPos[0][1].indx] = {
-                ...data.prevPos[0][1]
-            }
-    
-            data.prevPos.shift();
-            return 1;
-
-        } else {
-            console.warn('undoData> not in turn')
         }
 
-        return 0;
+        this.undoCache.unshift([data.prevPos[0][0].indx, data.prevPos[0][1].indx])
+
+        data.board[data.prevPos[0][0].indx] = {
+            ...data.prevPos[0][0]
+        }
+
+        data.board[data.prevPos[0][1].indx] = {
+            ...data.prevPos[0][1]
+        }
+
+        if (data.prevPos[0].length === 4) {
+            data.board[data.prevPos[0][2].indx] = {
+                ...data.prevPos[0][2],
+                type: 0,
+                color: 0,
+                mov: 0,
+                ESD_posbPos: undefined,
+            }
+
+            data.board[data.prevPos[0][3].indx] = {
+                ...data.prevPos[0][3],
+                type: 0,
+                color: 0,
+                mov: 0,
+                ESD_posbPos: undefined,
+            }
+        }
+
+        data.prevPos.shift();
+        return 1;
+    }
+
+    redoData(): number {
+
+        if (!this.override) {
+            if (!this.undo || data.prevPos.length === 0) {
+                console.warn('redoData> redo is not enabled or nothing to be redone');
+                return 0;
+            }
+        }
+
+        this.move(this.undoCache[0][0], this.undoCache[0][1]);
+        this.undoCache.shift();
+
+        return 1;
     }
 
     private castling(curIndx: number, nxtIndx: number): number {
@@ -106,6 +148,8 @@ export class Engine {
             mov: 1
         }
 
+        data.prevPos[0].push(data.board[curIndx + dirKing], data.board[nxtIndx + dirRook]);
+
         data.board[curIndx] = {
             ...data.board[curIndx],
             type: 0,
@@ -125,7 +169,7 @@ export class Engine {
     }
     
     move(curIndx: number, nxtIndx: number): number {
-        if (this.turn === data.board[curIndx].color) {
+        if (this.turn === data.board[curIndx].color || this.override) {
             this.generate();
             
             if (curIndx === nxtIndx || nxtIndx >= data.board.length) return 1;
@@ -146,3 +190,19 @@ export class Engine {
         return 4;
     }
 }
+
+const ga = new GameBoard();
+ga.dirInit();
+ga.init('r3k2r/8/8/8/8/8/8/R3K2R');
+const en = new Engine('override');
+en.move(4, 5);
+console.log(data.board[4]);
+console.log(data.board[5]);
+
+en.undoData();
+console.log(data.board[4]);
+console.log(data.board[5]);
+
+en.redoData();
+console.log(data.board[4]);
+console.log(data.board[5]);

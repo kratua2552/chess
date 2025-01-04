@@ -66,10 +66,10 @@ export class Pieces {
     static Black = 16;
 }
 
-export const data: { board: Board[], sqToEdge: SquareToEdge[], prevPos: any[][] } = {
+export const data: { board: Board[], sqToEdge: SquareToEdge[], prevPos: Board[][] } = {
     board: [],
     sqToEdge: [],
-    prevPos: []
+    prevPos: [],
 }
 
 export const readOnlyData: ReadOnlyData = {
