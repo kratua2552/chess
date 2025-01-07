@@ -140,11 +140,6 @@ class Interface {
         return 400;
     }
 
-
-    undo() {
-
-    }
-
     private updateTime(): void {
         clientData.gameStatus.currentTurn = (8 === clientData.gameStatus.currentTurn) ? 16 : 8;
         this.engine.turn = clientData.gameStatus.currentTurn;

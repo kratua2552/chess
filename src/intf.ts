@@ -46,11 +46,13 @@ interface Configuration {
 class Interface {
     private engine: Engine;
     private board: GameBoard;
+    private timer: Timer
     gameData: GameData | GameData_Timers | Base;
 
     constructor() {
         this.engine = new Engine();
         this.board = new GameBoard();
+        this.timer = new Timer();
 
         this.gameData = {
             status: { init: false },
@@ -61,13 +63,13 @@ class Interface {
         try {
             if (inp.init) {
 
-                if ('config' in this.gameData) console.warn('Interface.config> overrided current configuration');
-                if (inp.board === undefined) console.warn('Interface.config> board is not specifed, board have been set to default');
-                if (inp.undo === undefined) console.warn('Interface.config> undo is not specified, undo have been set to false');
-                if (inp.timeControl === undefined) console.warn('Interface.config> time control is not specified, time control have been set to false');
+                if ('config' in this.gameData) console.warn('config> overrided current configuration');
+                if (inp.board === undefined) console.warn('config> board is not specifed, board have been set to default');
+                if (inp.undo === undefined) console.warn('config> undo is not specified, undo have been set to false');
+                if (inp.timeControl === undefined) console.warn('config> time control is not specified, time control have been set to false');
                 if (inp.undo === true && inp.timeControl === true) {
                     inp.undo = false;
-                    console.warn('Interface.config> undo is not compatible with time control, undo have been set to false');
+                    console.warn('config> undo is not compatible with time control, undo have been set to false');
                 }
 
                 // base config
@@ -104,8 +106,8 @@ class Interface {
                 // timer config
                 if (inp.timeControl && 'config' in this.gameData) {
 
-                    if (inp.time_limt === undefined) console.warn('Interface.config> time limit is not specified, time limit have been set to 10 minutes');
-                    if (inp.time_increment === undefined) console.warn('Interface.config> time increment is not specified, time increment have been set to 0');
+                    if (inp.time_limt === undefined) console.warn('config> time limit is not specified, time limit have been set to 10 minutes');
+                    if (inp.time_increment === undefined) console.warn('config> time increment is not specified, time increment have been set to 0');
 
                     this.gameData = {
                         ...this.gameData,
@@ -131,7 +133,7 @@ class Interface {
             if (!inp.init) {
 
                 if (!('config' in this.gameData)) {
-                    console.error('Interface.config> configuration is not specified');
+                    console.error('config> configuration is not specified');
                     return 403;
                 }
 
@@ -150,12 +152,53 @@ class Interface {
     }
 
     start(): number {
-        if (!('config' in this.gameData)) return 401;
+        if (!('config' in this.gameData)) {
+            console.warn('start> game is not initialized')
+            return 401;
+        }
 
         if ('config' in this.gameData) {
             this.gameData.status.start = true;
             // do something with timers
         }
+    }
+
+    play(curIndx: number, nxtIndx: number): number {
+        if (!('config' in this.gameData)) {
+            console.warn('play> game is not initialized')
+            return 401;
+        }
+
+        if ('config' in this.gameData) {
+            if (this.gameData.status.start === false)  {
+                console.warn('play> game is not started');
+                return 402;
+            }
+
+            if ('remaining' in this.gameData.profiles.black && 'remaining' in this.gameData.profiles.white) {
+                if (this.gameData.profiles.black.remaining <= 0 && this.gameData.status.turn === 16) return 403;
+                if (this.gameData.profiles.white.remaining <= 0 && this.gameData.status.turn === 8) return 403;
+            }
+        }
+
+        const status: number = this.engine.move(curIndx, nxtIndx);
+
+        if (status === 20) {
+            this.update();
+        }
+
+        return 404;
+    }
+
+    private update() {
+        if (!('config' in this.gameData)) {
+            console.warn('update> game is not initialized')
+            return 401;
+        }
+
+        this.gameData.status.turn = (this.gameData.status.turn === 8) ? 16 : 8;
+        this.engine.turn = this.gameData.status.turn;
+        
     }
 }
 

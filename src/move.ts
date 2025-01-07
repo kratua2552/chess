@@ -116,7 +116,7 @@ export class Engine {
 
         if (!this.override) {
             if (!this.undo || data.prevPos.length === 0) {
-                console.warn('redoData> redo is not enabled or nothing to be redone');
+                console.warn('redoData> undo is not enabled or nothing to be redone');
                 return 0;
             }
         }
